@@ -57,7 +57,6 @@ cython_debug/
 #.idea/
 huggingface/
 checkpoints/
-models/
 
 # Cog
 .cog/
