@@ -19,9 +19,6 @@ import cv2
 import PIL
 from PIL import Image
 
-from diffusers import TCDScheduler
-from diffusers.models.model_loading_utils import load_state_dict
-
 from safetensors.torch import load_file
 
 from transformers import AutoModelForCausalLM
@@ -70,56 +67,6 @@ class Predictor(BasePredictor):
 
 
     @torch.inference_mode()
-    def fill_image(
-        self,
-        image,
-        mask_image,
-        control_image,
-        prompt,
-        negative_prompt,
-        width,
-        height,
-        num_steps,
-        num_outputs,
-        guidance_scale,
-        controlnet_scale,
-        seed,
-    ):
-        flush()
-        
-        # generator_list = []
-        # for i in range(num_outputs):
-        #     generator = torch.Generator(device=DEVICE).manual_seed(seed+i)
-        #     generator_list.append(generator)
-        generator = torch.Generator(device=DEVICE).manual_seed(seed)
-        
-        # Convert prompt, negative_prompt to embeddings
-        # conditioning, pooled = self.compel(prompt)
-        # neg_conditioning, neg_pooled = self.compel(negative_prompt)
-
-        print("Start inference...")
-        print(f"[Debug] Prompt: {prompt}")
-        
-        image_list = self.pipe(
-            prompt=prompt,
-            negative_prompt=negative_prompt,
-            image=image,
-            mask_image=mask_image,
-            control_image_list=[0, 0, 0, 0, 0, 0, 0, control_image],
-            width=width,
-            height=height,
-            num_images_per_prompt=num_outputs,
-            num_inference_steps=num_steps,
-            guidance_scale=guidance_scale,
-            union_control=True,
-            union_control_type=torch.Tensor([0, 0, 0, 0, 0, 0, 0, controlnet_scale]),
-            generator=generator,
-        ).images
-
-        return image_list
-
-
-    @torch.inference_mode()
     def predict(
         self,
         image: Path = Input(
@@ -136,19 +83,19 @@ class Predictor(BasePredictor):
         ),
         top_k: int = Input(
             description="Top k, if sample is enabled.",
+            default=5,
+            ge=0,
+            le=50,
+        ),
+        top_p: float = Input(
+            description="Top p, if sample is enabled.",
             default=0.5,
             ge=0,
             le=1,
         ),
-        top_p: float = Input(
-            description="Top p, if sample is enabled.",
-            default=3,
-            ge=0,
-            le=50,
-        ),
         temperature: float = Input(
             description="Temperature, if sample is enabled.",
-            default=0.1,
+            default=0.3,
             ge=0,
             le=1,
         ),
@@ -228,7 +175,7 @@ class Predictor(BasePredictor):
                     use_cache=True
                 )
             
-            answer = tokenizer.decode(outputs[0].cpu().tolist(), skip_special_tokens=True)
+            answer = self.tokenizer.decode(outputs[0].cpu().tolist(), skip_special_tokens=True)
             
             print("[~] Finish generation in " + str(time.time()-start2) + " secs.")
             
