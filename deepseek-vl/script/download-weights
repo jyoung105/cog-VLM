@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+
+# Run this before you deploy it on replicate, because if you don't whenever you run the model, 
+# it will download the weights from the internet, which will take a long time.
+
+import os
+import sys
+
+import torch
+from huggingface_hub import snapshot_download
+
+sys.path.append('.') # append project directory to path so predict.py can be imported
+
+from predict import TOTAL_CACHE, MODEL_ID
+
+
+# Set to True for faster uploads and downloads from the Hub using hf_transfer.
+# https://huggingface.co/docs/huggingface_hub/package_reference/environment_variables#hfhubenablehftransfer
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]="1"
+
+# Add your hf user access token to prove that you have granted to use model with permission.
+# https://huggingface.co/docs/hub/security-tokens
+# os.environ["HF_TOKEN"]="YOUR_TOKEN_HERE" # fix with your token
+
+
+# Download model
+snapshot_download(MODEL_ID, local_dir=TOTAL_CACHE)
